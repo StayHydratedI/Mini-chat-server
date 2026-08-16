@@ -6,19 +6,21 @@
 <title>Mini Chat Server</title>
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { height: 100%; margin: 0; padding: 0; }
+  html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: linear-gradient(180deg, #eef1f7 0%, #e6e9f2 100%);
     color: #1a1a1a;
     display: flex;
     justify-content: center;
+    position: fixed;
+    inset: 0;
   }
 
   #app {
     width: 100%;
     max-width: 600px;
-    height: 100dvh;
+    height: 100dvh; /* fallback; JS overrides this to the real visible height */
     display: flex;
     flex-direction: column;
     background: white;
@@ -173,6 +175,23 @@
   </div>
 
   <script>
+    // Keep #app locked to the REAL visible viewport, even when the
+    // on-screen keyboard opens (fixes content shifting/scrolling out of view)
+    const appEl = document.getElementById("app");
+
+    function fixViewportHeight() {
+      const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+      appEl.style.height = vh + "px";
+      window.scrollTo(0, 0);
+    }
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", fixViewportHeight);
+      window.visualViewport.addEventListener("scroll", fixViewportHeight);
+    }
+    window.addEventListener("resize", fixViewportHeight);
+    fixViewportHeight();
+
     const statusEl = document.getElementById("status");
     const statusText = document.getElementById("statusText");
     const messagesEl = document.getElementById("messages");
@@ -263,6 +282,13 @@
 
     usernameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") joinChat(); });
     messageInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(); });
+
+    messageInput.addEventListener("focus", () => {
+      setTimeout(() => {
+        fixViewportHeight();
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }, 300);
+    });
   </script>
 </body>
 </html>

@@ -85,7 +85,10 @@
   .bubble-row.mine { align-self: flex-end; align-items: flex-end; }
   .bubble-row.theirs { align-self: flex-start; align-items: flex-start; }
 
-  .bubble-name { font-size: 11px; color: #6b7280; margin-bottom: 2px; padding: 0 4px; }
+  .bubble-name {
+    font-size: 12px; font-weight: 700; margin-bottom: 2px; padding: 0 4px;
+    background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
 
   .bubble {
     padding: 9px 13px; border-radius: 16px; font-size: 15px;
@@ -180,6 +183,10 @@
     const appEl = document.getElementById("app");
 
     function fixViewportHeight() {
+      if (window.innerWidth > 600) {
+        appEl.style.height = ""; // let CSS (90vh + padding) handle desktop
+        return;
+      }
       const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
       appEl.style.height = vh + "px";
       window.scrollTo(0, 0);
@@ -215,6 +222,17 @@
       statusEl.classList.remove("connected");
     };
 
+    // Give each username a consistent, distinct gradient color
+    function gradientForName(name) {
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const hue1 = Math.abs(hash) % 360;
+      const hue2 = (hue1 + 55) % 360;
+      return `linear-gradient(90deg, hsl(${hue1}, 80%, 50%), hsl(${hue2}, 80%, 50%))`;
+    }
+
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
 
@@ -235,6 +253,7 @@
           const name = document.createElement("div");
           name.className = "bubble-name";
           name.textContent = data.username;
+          name.style.backgroundImage = gradientForName(data.username);
           row.appendChild(name);
         }
 

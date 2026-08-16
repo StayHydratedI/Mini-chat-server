@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mini Chat Server</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, sans-serif;
+    max-width: 600px;
+    margin: 40px auto;
+    background: #f4f5f7;
+    color: #222;
+  }
+  h2 { margin-bottom: 4px; }
+  #status { font-size: 12px; color: #888; margin-bottom: 14px; }
+
+  #joinBox { display: flex; gap: 8px; margin-bottom: 14px; }
+  #joinBox input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+  #joinBox button, #chatBox button {
+    padding: 10px 16px; border: none; border-radius: 6px;
+    background: #2563eb; color: white; cursor: pointer; font-size: 14px;
+  }
+  #joinBox button:hover, #chatBox button:hover { background: #1d4ed8; }
+
+  #chatBox { display: none; }
+  #messages {
+    background: white; border: 1px solid #ddd; border-radius: 8px;
+    height: 320px; overflow-y: auto; padding: 12px; margin-bottom: 10px;
+  }
+  .msg { margin: 6px 0; }
+  .msg .user { font-weight: 600; color: #2563eb; }
+  .system { color: #999; font-style: italic; font-size: 13px; text-align: center; margin: 4px 0; }
+
+  #inputRow { display: flex; gap: 8px; }
+  #inputRow input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; }
+
+  #users { font-size: 12px; color: #666; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+  <h2>Mini Chat Server</h2>
+  <div id="status">Not connected</div>
+
+  <div id="joinBox">
+    <input id="usernameInput" type="text" placeholder="Enter a username">
+    <button onclick="joinChat()">Join</button>
+  </div>
+
+  <div id="chatBox">
+    <div id="users">Online: —</div>
+    <div id="messages"></div>
+    <div id="inputRow">
+      <input id="messageInput" type="text" placeholder="Type a message...">
+      <button onclick="sendMessage()">Send</button>
+    </div>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const messagesEl = document.getElementById("messages");
+    const usersEl = document.getElementById("users");
+    const joinBox = document.getElementById("joinBox");
+    const chatBox = document.getElementById("chatBox");
+    const usernameInput = document.getElementById("usernameInput");
+    const messageInput = document.getElementById("messageInput");
+
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new WebSocket(`${protocol}//${location.host}`);
+    let username = "";
+
+    socket.onopen = () => { statusEl.textContent = "Connected to server"; };
+    socket.onclose = () => { statusEl.textContent = "Disconnected"; };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      if (data.type === "system") {
+        const p = document.createElement("div");
+        p.className = "system";
+        p.textContent = data.message;
+        messagesEl.appendChild(p);
+      }
+
+      if (data.type === "message") {
+        const p = document.createElement("div");
+        p.className = "msg";
+        p.innerHTML = `<span class="user">${data.username}:</span> ${data.message}`;
+        messagesEl.appendChild(p);
+      }
+
+      if (data.type === "userlist") {
+        usersEl.textContent = "Online: " + data.users.join(", ");
+      }
+
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    };
+
+    function joinChat() {
+      username = usernameInput.value.trim();
+      if (!username) return;
+      socket.send(JSON.stringify({ type: "join", username }));
+      joinBox.style.display = "none";
+      chatBox.style.display = "block";
+      messageInput.focus();
+    }
+
+    function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text) return;
+      socket.send(JSON.stringify({ type: "message", message: text }));
+      messageInput.value = "";
+    }
+
+    usernameInput.addEventListener("keydown", (e) => { if (e.key === "Enter") joinChat(); });
+    messageInput.addEventListener("keydown", (e) => { if (e.key === "Enter") sendMessage(); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "name": "mini-chat-server",
+  "version": "1.0.0",
+  "description": "A minimal real-time chat server using Node.js and WebSockets",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  }
+}
